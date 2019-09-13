@@ -1,4 +1,4 @@
-# pdf-diff
+# pdf-diff-test
 
 Finds differences between two PDF documents:
 
@@ -20,23 +20,12 @@ The script is written in Python 3, and it relies on the `pdftotext` program.
     brew install libxml2 libxslt poppler
 ## Installation
 
-From PyPI:
-
-    pip install pdf-diff
-
 From source:
 
-    sudo python3 setup.py install
+    python setup.py install (OR python3 setup.py install )
+
 ## Running
 
 Turn two PDFs into one large PNG image showing the differences:
 
     pdf-diff before.pdf after.pdf > comparison_output.png
-
-## Maintainer Notes
-
-To deploy:
-
-	python3 -m pip install --user --upgrade setuptools wheel twine
-	python3 setup.py sdist bdist_wheel
-	python3 -m twine upload dist/*
