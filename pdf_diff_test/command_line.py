@@ -9,6 +9,7 @@ import json, subprocess, io, os
 from lxml import etree
 from PIL import Image, ImageDraw, ImageOps
 from PyPDF2 import PdfFileReader
+from collections import defaultdict
 
 def compute_changes(pdf_fn_1, pdf_fn_2, top_margin=0, bottom_margin=100):
     # Serialize the text in the two PDFs.
@@ -316,19 +317,69 @@ def realign_pages(pages, changes):
 
     # Re-group the pages by where we made a split on both sides.
     page_groups = [({}, {})]
-
-    if len(pages[1]) > len(pages[0]):
+    page_count = list()
+    page_left_dict = defaultdict(dict)
+    page_right_dict = defaultdict(dict)
+    for key, value in pages[0].items():
+        if key[0] not in page_count:
+            page_count.append(key[0])
+    for key, value in pages[1].items():
+        if key[0] not in page_count:
+            page_count.append(key[0])     
+    for c in page_count:
+        left = dict()
+        right = dict()
         for key, value in pages[1].items():
-            if key in pages[0]:
-                page_groups.append(({key:value}, {key:pages[0][key]}))
-            else:
-                page_groups.append(({key:value}, {}))
-    else:
+            if key[0] == c:
+                #sys.stderr.write('%s\n'%str(key))
+                left[key] = value
+            #page_left_dict[c].append({key:value})
+        page_left_dict[c] = left
+        #sys.stderr.write('%s\n'%str( page_left_dict[1]) )
         for key, value in pages[0].items():
-            if key in pages[1]:
-                page_groups.append(({key:value}, {key:pages[1][key]}))
-            else:
-                page_groups.append(({key:value}, {}))
+            if key[0] == c:
+                right[key] = value
+        page_right_dict[c] = right
+    #sys.stderr.write('%s\n'%(str(page_left_dict)))
+    #sys.stderr.write('%s\n'%(str(page_right_dict)))
+
+
+    for c in page_count:
+        if c in page_left_dict and c in page_right_dict:
+            page_groups.append( (page_left_dict[c], page_right_dict[c]) )   
+        elif c in page_left_dict and c not in page_right_dict:
+            page_groups.append( (page_left_dict[c], {}) ) 
+        elif c not in page_left_dict and c in page_right_dict:
+            page_groups.append( ({}, page_right_dict[c]))
+        else:
+            page_groups.append( ({}, {}) )
+    #sys.stderr.write('%s\n'%page_groups)
+    # if len(pages[1]) > len(pages[0]):
+    #     for key, value in pages[1].items():
+    #         if key in pages[0]:
+    #             page_groups.append(({key:value}, {key:pages[0][key]}))
+    #         else:
+    #             page_groups.append(({key:value}, {}))
+    # else:
+    #     for key, value in pages[0].items():
+    #         if key in pages[1]:
+    #             page_groups.append(({key:value}, {key:pages[1][key]}))
+    #         else:
+    #             page_groups.append(({key:value}, {}))
+    #sys.stderr.write('%s\n'%(page_groups)) 
+
+
+    # page_groups = [({}, {})]
+    # for i, box in enumerate(changes):
+    #     if box != "*":
+    #         page_groups[-1][ box["pdf"]["index"] ][ box["page"] ] = pages[box["pdf"]["index"]][box["page"]]
+    #     else:
+    #         # Did we split at this location?
+    #         pages_before = set((b["pdf"]["index"], b["page"]) for j, b in enumerate(changes) if j < i and b != "*")
+    #         pages_after = set((b["pdf"]["index"], b["page"]) for j, b in enumerate(changes) if j > i and b != "*")
+    #         if len(pages_before & pages_after) == 0:
+    #             # no page is on both sides of this asterisk, so start a new group
+    #             page_groups.append( ({}, {}) )
     return page_groups
 
 def draw_red_boxes(changes, pages, styles):
