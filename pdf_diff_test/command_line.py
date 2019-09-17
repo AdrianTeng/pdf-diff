@@ -343,7 +343,7 @@ def realign_pages(pages, changes):
     #sys.stderr.write('%s\n'%(str(page_left_dict)))
     #sys.stderr.write('%s\n'%(str(page_right_dict)))
 
-
+    page_count.sort()
     for c in page_count:
         if c in page_left_dict and c in page_right_dict:
             page_groups.append( (page_left_dict[c], page_right_dict[c]) )   
